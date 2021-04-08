@@ -3,7 +3,9 @@ Cryptographic modules created on COBOL.
 
 ## Why?
 Why NOT?
+
 I mean, there's a need to use cryptographic modules on COBOL, and as there's no public solutions, I decided to go by myself.
+
 All this modules are free to download and use, and closed releases are NOT allowed as they are under GNU GPL v3 License. With this "restriction" the goal is to ensure it will be always open to all users.
 
 ## What functions cover this repository
