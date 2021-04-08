@@ -1,5 +1,12 @@
       *****************************************************************
       *                                                               *
+      * This software have been developed under GNU GPL v3 License.   *
+      *   That means, no closed distribution of this software is      *
+      *   allowed.                                                    *
+      *                                                               *
+      * Please refer to the License text here:                        *
+      *   https://www.gnu.org/licenses/gpl-3.0.txt                    *
+      *                                                               *
       * Secure Hash Algorithm - 2 (SHA512) COBOL Implementation.      *
       *                                                               *
       * This code was written by David O. Solé González (aka DoHITB). *
