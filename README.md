@@ -11,7 +11,7 @@ All this modules are free to download and use, and closed releases are NOT allow
 
 ## What functions cover this repository
  * SHA-1: The classical hash algorithm, fully tested.
- * SHA-512: The newest hash algorithm (it's still on BETA, so be aware of using it). It will be fully tested soon.
+ * SHA-512: The newest hash algorithm, tested.
  * So many other modules yet to come. Do you need one? Just tell me!
 
 
