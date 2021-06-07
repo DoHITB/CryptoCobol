@@ -263,11 +263,16 @@
       *   Padding calculation
           05 WS-P1-RAW.
              10 WS-P1             OCCURS 64 PIC 9(01).
+          05 WS-P1-BLOCK          REDEFINES WS-P1-RAW.
+             10 WS-P1-B           OCCURS 8  PIC X(08).
           05 WS-P2-RAW.
              10 WS-P2             OCCURS 64 PIC 9(01).
+          05 WS-P2-BLOCK          REDEFINES WS-P2-RAW.
+             10 WS-P2-B           OCCURS 8 PIC X(08).
           05 WS-P1-IDX            PIC 9(02) VALUE ZEROES.
           05 WS-P2-IDX            PIC 9(02) VALUE ZEROES.
           05 WS-PADDING-IDX       PIC 9(04) VALUE ZEROES.
+          05 WS-K-BLOCKS          PIC 9(04) VALUE ZEROES.
           
       *   Functions variables
           05 WS-X                 PIC X(64) VALUE SPACES.
@@ -288,7 +293,7 @@
           05 WS-M                 OCCURS 16 PIC X(64).
           05 WS-MI                PIC 9(02).
       *      W
-          05 WS-W                 OCCURS 64 PIC X(64).
+          05 WS-W                 OCCURS 80 PIC X(64).
           05 WS-WI                PIC 9(02).
       *      H (Current)
           05 WS-HC                OCCURS 8.
@@ -317,9 +322,11 @@
           
       *   Translation to final hash
           05 WS-HAUX-IN           PIC X(64).
-          05 WS-HAUX-IN-B         OCCURS 16 PIC X(04).
+          05 WS-HAUX-IN-B         REDEFINES WS-HAUX-IN
+                                  OCCURS 16 PIC X(04).
           05 WS-HAUX-OUT          PIC X(16).
-          05 WS-HAUX-OUT-H        OCCURS 16 PIC X(01).
+          05 WS-HAUX-OUT-H        REDEFINES WS-HAUX-OUT
+                                  OCCURS 16 PIC X(01).
           05 WS-CI                PIC 9(02) VALUE ZEROES.
           05 WS-CJ                PIC 9(02) VALUE ZEROES.
 
@@ -372,18 +379,25 @@
               10 WS-KS-VAL        PIC X(64) VALUE SPACES.
               10 WS-KS-BIN        REDEFINES WS-KS-VAL.
                  15 WS-KS-BIN-1   PIC X(32).
-                 10 WS-KS-BIN-2   PIC X(32).
-                                  
-              
-              
-       LINKAGE SECTION.
-         01 LS-SECTION.
-             05 LS-FILE-NAME      PIC X(08).
-             05 LS-OUTPUT.
-                10 LS-OUT         OCCURS 8.
-                   15 LS-OUT-OCC  PIC X(64).
+                 15 WS-KS-BIN-2   PIC X(32).
       
-       PROCEDURE DIVISION USING LS-SECTION.
+      *   DEBUGGING
+       01 TEMP-LINK.
+          05 LS-FILE-NAME         PIC X(08) VALUE 'TEST    '.        
+          05 LS-OUTPUT.
+             10 LS-OUT            OCCURS 8.
+                15 LS-OUT-OCC     PIC X(16).
+              
+              
+      *LINKAGE SECTION.
+      *  01 LS-SECTION.
+      *     05 LS-FILE-NAME       PIC X(08).
+      *     05 LS-OUTPUT.
+      *        10 LS-OUT          OCCURS 8.
+      *           15 LS-OUT-OCC   PIC X(64).
+      
+      *PROCEDURE DIVISION USING LS-SECTION.
+       PROCEDURE DIVISION.
        MAINLINE.
       *****************************************************************
       *    P A D D I N G   S E C T I O N   I N I                      *
@@ -399,7 +413,7 @@
            MOVE 0                                TO VERSION-MINOR.
            MOVE 0                                TO VERSION-HOTFIX.
       
-           DISPLAY 'SHA-512 Prototype - Made By DoHITB'.
+           DISPLAY 'SHA-512 Hasing - Made By DoHITB'.
            DISPLAY '  Version: ' VERSION.
            DISPLAY SPACE.
       
@@ -411,6 +425,23 @@
              PERFORM FILL-TABLES
            END-IF
        
+      *    DEBUGGING
+           MOVE LS-FILE-NAME                    TO CNS-FILE-NAME.
+           OPEN OUTPUT R-HASH.
+
+      *         abcde text
+           MOVE '00000000'                      TO HCHAR(1).
+           MOVE '00000000'                      TO HCHAR(2).
+           MOVE '00000000'                      TO HCHAR(3).
+           MOVE '01100001'                      TO HCHAR(4).
+           MOVE '01100010'                      TO HCHAR(5).
+           MOVE '01100011'                      TO HCHAR(6).
+           MOVE '01100100'                      TO HCHAR(7).
+           MOVE '01100101'                      TO HCHAR(8).
+
+           WRITE HASH.
+           CLOSE R-HASH.
+
       *    To padd the message we need to calculate the length of the 
       *    message
       *
@@ -442,24 +473,27 @@
       
       *    We move each HC(i) 64-bit blocks to LS-OUT-OCC, but first
       *    we need to convert from BIN to HEX.
-      *
+      * 
            PERFORM VARYING WS-CI FROM 1 BY 1
            UNTIL WS-CI > 8
       *      Move each HC(i) to aux structure
+      *
              MOVE WS-HC(WS-CI)                   TO WS-HAUX-IN
       
              PERFORM VARYING WS-CJ FROM 1 BY 1
              UNTIL WS-CJ > 16
       *        Iterate over each 4-bit to translate to HEX
+      *
                MOVE WS-HAUX-IN-B(WS-CJ)          TO WS-BIN-KEY
                
                PERFORM BIN2HEX
-               
+
                MOVE WS-HEX-KEY                   
                TO WS-HAUX-OUT-H(WS-CJ)
              END-PERFORM
-             
+
       *      Move HOUT to corresponding LS-OUT-OCC
+      *
              MOVE WS-HAUX-OUT                    TO LS-OUT-OCC(WS-CI)
            END-PERFORM.
            
@@ -483,7 +517,7 @@
       
       *    First, open file and check for errors
            PERFORM OPEN-HASH.
-           
+    
       *    Make first read
            PERFORM READ-HASH.
            
@@ -496,11 +530,12 @@
       *    Unitil EOF, count and read
            PERFORM UNTIL SW-HASH-EOF-T
              PERFORM ADD-DATA
+
              PERFORM READ-HASH
            END-PERFORM.
            
       *    Close the file as we ended by now
-           PERFORM CLOSE-HASH.           
+           PERFORM CLOSE-HASH.
            
       *    On this point, WS-PADDING-KEY have the binary value of L
       *    Now we have to calculate ( L + 1 + K ) mod 1024 = 896
@@ -542,6 +577,9 @@
            SUBTRACT WS-X-VAL                   FROM WS-L-VAL
                                              GIVING WS-K-VAL.   
 
+           ADD 1                                 TO WS-K-VAL.
+
+
       *****************************************************************
        ADD-DATA.
       *****************************************************************
@@ -579,11 +617,13 @@
       *      The first non-0 digit has been found. We will add
       *      64 - (WS-FL-INDEX - 1) * 8 + (WS-FL-ICHAR-I - 1)
       *
+             SUBTRACT 1                        FROM WS-FL-INDEX
+             MOVE 0                              TO WS-FL-ICHAR-I 
+
              MOVE WS-FL-INDEX                    TO WS-FL-OFFSET
              SUBTRACT 1                        FROM WS-FL-OFFSET
              MULTIPLY 8                          BY WS-FL-OFFSET
              ADD WS-FL-ICHAR-I                   TO WS-FL-OFFSET
-             SUBTRACT 1                        FROM WS-FL-OFFSET
              SUBTRACT 64                       FROM WS-FL-OFFSET
            END-IF.
            
@@ -608,48 +648,52 @@
            MOVE WS-HEX-VAL-2                     TO WS-HEX2BIN-INDEX.
            PERFORM BINVALUE.
            MOVE WS-BIN-KEY                       TO WS-BIN-VAL-2.
-           
+
       *    Now on WS-BIN-VAL we have the bin repr. of WS-FL-OFFSET.
       *    We add WS-BIN-VAL to the value we already have.
       *
       *    CAUTION: We're using SUM variables!
            SET SW-ACC-FALSE                      TO TRUE
-      
+
+      *    First, we will add the last 8 bits of PADDING-KEY
+      *    to WS-BIN-VAL
+      *
            PERFORM VARYING WS-SUM-INDEX FROM 1 BY 1
            UNTIL WS-SUM-INDEX > 8
-             MOVE WS-PADDING-KEY-X(WS-SUM-INDEX) TO SW-SUM
-             ADD  WS-BIN-VAL-X(WS-SUM-INDEX)     TO SW-SUM
-      
+             MOVE WS-PADDING-KEY-X(129 - WS-SUM-INDEX)
+               TO SW-SUM
+
+             ADD  WS-BIN-VAL-X(9 - WS-SUM-INDEX)
+              TO  SW-SUM
+
              IF SW-ACC-TRUE
                ADD 1                             TO SW-SUM
                SET SW-ACC-FALSE                  TO TRUE
              END-IF
-      
+
              IF SW-ACC-ON
                IF SW-SUM = 2
-                 MOVE '0'                    
-                 TO WS-PADDING-KEY-X(WS-SUM-INDEX)
+                 MOVE '0'
+                   TO WS-PADDING-KEY-X(129 - WS-SUM-INDEX)
                ELSE
-                 MOVE '1'                   
-                 TO WS-PADDING-KEY-X(WS-SUM-INDEX)
+                 MOVE '1'
+                   TO WS-PADDING-KEY-X(129 - WS-SUM-INDEX)
                END-IF
-      
-               SET SW-ACC-TRUE                   TO TRUE
              ELSE
-               MOVE SW-SUM                       
-               TO WS-PADDING-KEY-X(WS-SUM-INDEX)
-               
-               SET SW-ACC-FALSE                  TO TRUE
+               MOVE SW-SUM
+                 TO WS-PADDING-KEY-X(129 - WS-SUM-INDEX)
+
+               SET  SW-ACC-FALSE                 TO TRUE
              END-IF
            END-PERFORM.
-           
+      
       *    For this scenario, if there's carry, we need to treat it
       *
            IF SW-ACC-TRUE          
              PERFORM VARYING WS-SUM-INDEX FROM 9 BY 1
              UNTIL WS-SUM-INDEX > 128 OR
                    SW-ACC-FALSE
-               MOVE WS-PADDING-KEY-X(WS-SUM-INDEX) 
+               MOVE WS-PADDING-KEY-X(129 - WS-SUM-INDEX) 
                TO SW-SUM
                
                IF SW-ACC-TRUE
@@ -675,6 +719,7 @@
                END-IF
              END-PERFORM
            END-IF.
+
       
       *****************************************************************
        MAKE-PADDING.
@@ -699,24 +744,25 @@
               MOVE HASH                          TO WS-P1-RAW
               
               PERFORM VARYING WS-P1-IDX FROM 1 BY 1
-              UNTIL WS-P1-IDX > 64
+              UNTIL WS-P1-IDX > 8
       *         If there's still no data, just keep going
+      *
                 IF SW-FILE-ZERO-F
-                  IF WS-P1(WS-P1-IDX) = '0'
+                  IF WS-P1-B(WS-P1-IDX) = '00000000'
                     CONTINUE
                   ELSE
                     SET SW-FILE-ZERO-T           TO TRUE
-                    MOVE WS-P1(WS-P1-IDX)        TO WS-P2(WS-P2-IDX)
+                    MOVE WS-P1-B(WS-P1-IDX)      TO WS-P2-B(WS-P2-IDX)
                     
                     ADD 1                        TO WS-P2-IDX
                   END-IF
                 ELSE
-                  MOVE WS-P1(WS-P1-IDX)          TO WS-P2(WS-P2-IDX)
+                  MOVE WS-P1-B(WS-P1-IDX)        TO WS-P2-B(WS-P2-IDX)
                     
                   ADD 1                          TO WS-P2-IDX
                 END-IF
                 
-                IF WS-P2-IDX > 64
+                IF WS-P2-IDX > 8
                   MOVE WS-P2-RAW                 TO OUT
                   MOVE 1                         TO WS-P2-IDX
                   
@@ -729,56 +775,58 @@
            
       *    Once the file is copied, it's time for the padding
       *
+      *    Get the number of blocks that are going to being writted.
+      *    As WS-K-VAL is pre-calculated following RFC, it will be
+      *    divisible by 8.
+      *
+           DIVIDE 8                             INTO WS-K-VAL
+           GIVING WS-K-BLOCKS.
 
-      *    First occurs will be '1' + n 0's
-           MOVE 1                                TO WS-FL-ICHAR-I.
-           MOVE 1                                TO WS-FL-INDEX.
-      
-           MOVE '1'                              
-           TO WS-FL-ICHAR(WS-FL-ICHAR-I).
-           
-           ADD 1                                 TO WS-FL-ICHAR-I.
-           
-      *    Then, add a "K" number of consecutive '0'
-           PERFORM VARYING WS-PADDING-IDX FROM 1 BY 1 
-           UNTIL WS-PADDING-IDX < WS-K-VAL
-             MOVE '0'                            
-             TO WS-FL-ICHAR(WS-FL-ICHAR-I)
-             
-             ADD 1                               TO WS-FL-ICHAR-I
-             
-      *      We filled all the 8-bits
-             IF WS-FL-ICHAR-I > 7
-               MOVE WS-FL-ICHAR-FULL             
-               TO HOUT(WS-FL-INDEX)
-               
-               MOVE 1                            TO WS-FL-ICHAR-I
-               ADD 1                             TO WS-FL-INDEX
-               
-      *         We filled all the 64-bits
-               IF WS-FL-INDEX > 7
-                 PERFORM WRITE-OUT
-                 MOVE 1                          TO WS-FL-INDEX
-               END-IF
+           SUBTRACT 8                           FROM WS-K-BLOCKS.
+
+      *    First block is special as it has a '1' on first position
+           MOVE '10000000'                        TO WS-P2-B(WS-P2-IDX).
+           ADD 1                                  TO WS-P2-IDX.
+
+           IF WS-P2-IDX > 8
+             MOVE WS-P2-RAW                        TO OUT
+             MOVE 1                                TO WS-P2-IDX
+
+             PERFORM WRITE-OUT
+           END-IF.
+
+      *    Then, the rest of the blocks
+           SUBTRACT 1                            FROM WS-K-BLOCKS.
+
+           PERFORM WS-K-BLOCKS TIMES
+             MOVE '00000000'                       TO WS-P2-B(WS-P2-IDX)
+             ADD 1                                 TO WS-P2-IDX
+
+             IF WS-P2-IDX > 8
+               MOVE WS-P2-RAW                      TO OUT
+               MOVE 1                              TO WS-P2-IDX 
+
+               PERFORM WRITE-OUT
              END-IF
            END-PERFORM.
-           
+
       *    If everything is OK, all the 64-bit buffer will be full,
-      *    As 896 mod 16 = 0, and we will write a number of bits
-      *    that is congruent with 896
+      *    As K mod 16 = 0, and we will write a number of bits
+      *    that is congruent with 16
       *
            PERFORM WRITE-OUT.
            
       *    Finally, write the 128-bit representation of L
            MOVE WS-PADDING-64(1)                 TO OUT.
            PERFORM WRITE-OUT.
-           
+
            MOVE WS-PADDING-64(2)                 TO OUT.
            PERFORM WRITE-OUT.                 
            
       *    Don't forget to close both files
            PERFORM CLOSE-HASH.
            PERFORM CLOSE-OUT.
+
 			
       *****************************************************************
       *    H A S H I N G   F U N C T I O N S                          *
@@ -838,29 +886,37 @@
       *    (rfc6234: All addition is performed modulo 2^64.)
       *
       
-      *    First of all, open the output file
-           PERFORM OPEN-OUT.
-           
+      *    First of all, open the output file PERFORM OPEN-OUT.
+           PERFORM OPEN-OUT-R.
+
       *    Then, initialize "H"
            PERFORM INIT-H.
-                      
+
       *    Until we reach EOF, keep doing
            PERFORM UNTIL SW-OUT-EOF-T
       *      Read the first 16 rows and store it on "M"
              PERFORM READ-OUT-M
              
-      *      1. Prepare the message schedule W
-             PERFORM SCHEDULE
+             IF SW-OUT-EOF-T
+      *        If there's EOF means that we treated all file
+               CONTINUE
+             ELSE
+      *        1. Prepare the message schedule W
+               PERFORM SCHEDULE
              
-      *      2. Initialize the working variables
-             PERFORM H-MOVE
+      *        2. Initialize the working variables
+               PERFORM H-MOVE
              
-      *      3. Perform the main hash computation
-             PERFORM MAIN-HASH
+      *        3. Perform the main hash computation
+               PERFORM MAIN-HASH
              
-      *      4. Compute the intermediate hash value H(i)
-             PERFORM INT-HASH
+      *        4. Compute the intermediate hash value H(i)
+               PERFORM INT-HASH
+             END-IF
            END-PERFORM.
+
+           PERFORM CLOSE-OUT.
+
 
       *****************************************************************
        INIT-H.
@@ -919,38 +975,38 @@
            MOVE WS-M(14)                         TO WS-W(14).
            MOVE WS-M(15)                         TO WS-W(15).
            MOVE WS-M(16)                         TO WS-W(16).
-           
+
       *    We start at 17, as COBOL indexes starts by 1 instead of 0.
            PERFORM VARYING WS-WI FROM 17 BY 1
-           UNTIL WS-WI > 64
+           UNTIL WS-WI > 80
       *      Wt = SSIG1(W(t-2)) + W(t-7) + SSIG0(W(t-15)) + W(t-16)
       *      Wt = SSIG1(W(t-2))
              MOVE WS-W(WS-WI - 2)                TO WS-X
-             
+
              PERFORM F-SSIG1
              
              MOVE WS-R                           TO WS-W(WS-WI)
-             
+
       *      Wt = Wt + W(t - 7)
              MOVE WS-W(WS-WI)                    TO WS-SUM-KEY-1
              MOVE WS-W(WS-WI - 7)                TO WS-SUM-KEY-2
-             
+
              PERFORM F-SUM
              
              MOVE WS-SUM-RESULT                  TO WS-W(WS-WI)
-      
+
       *      Wt = Wt + SSIG0(W(t - 15))
              MOVE WS-W(WS-WI - 15)               TO WS-X
-             
+
              PERFORM F-SSIG0
-             
+
              MOVE WS-W(WS-WI)                    TO WS-SUM-KEY-1
              MOVE WS-R                           TO WS-SUM-KEY-2
              
              PERFORM F-SUM
              
              MOVE WS-SUM-RESULT                  TO WS-W(WS-WI)
-      
+
       *      Wt = Wt + W(t - 16)     
              MOVE WS-W(WS-WI)                    TO WS-SUM-KEY-1
              MOVE WS-W(WS-WI - 16)               TO WS-SUM-KEY-2
@@ -982,6 +1038,7 @@
            MOVE WS-HP(6)                         TO WS-F.
            MOVE WS-HP(7)                         TO WS-G.
            MOVE WS-HP(8)                         TO WS-H.
+
       
       *****************************************************************
        MAIN-HASH.
@@ -1011,7 +1068,7 @@
              MOVE WS-E                           TO WS-X
              
              PERFORM F-BSIG1
-             
+
              MOVE WS-T1                          TO WS-SUM-KEY-1
              MOVE WS-R                           TO WS-SUM-KEY-2
              
@@ -1025,7 +1082,7 @@
              MOVE WS-G                           TO WS-Z
              
              PERFORM F-CH
-             
+
              MOVE WS-T1                          TO WS-SUM-KEY-1
              MOVE WS-R                           TO WS-SUM-KEY-2
              
@@ -1034,6 +1091,7 @@
              MOVE WS-SUM-RESULT                  TO WS-T1
       
       *      T1 = T1 + Kt (WS-KS-VAL(WS-T))
+
              MOVE WS-T1                          TO WS-SUM-KEY-1
              MOVE WS-KS-VAL(WS-T)                TO WS-SUM-KEY-2
              
@@ -1042,6 +1100,7 @@
              MOVE WS-SUM-RESULT                  TO WS-T1
       
       *      T1 = T1 + Wt (WS-W(WS-T))
+
              MOVE WS-T1                          TO WS-SUM-KEY-1
              MOVE WS-W(WS-T)                     TO WS-SUM-KEY-2
              
@@ -1054,7 +1113,7 @@
              MOVE WS-A                           TO WS-X
              
              PERFORM F-BSIG0
-             
+
              MOVE WS-R                           TO WS-T2
              
       *      T2 = T2 + MAJ(a, b, c)
@@ -1063,7 +1122,7 @@
              MOVE WS-C                           TO WS-Z
              
              PERFORM F-MAJ
-             
+
              MOVE WS-T2                          TO WS-SUM-KEY-1
              MOVE WS-R                           TO WS-SUM-KEY-2
              
@@ -1194,6 +1253,7 @@
            MOVE WS-HC(6)                         TO WS-HP(6).
            MOVE WS-HC(7)                         TO WS-HP(7).
            MOVE WS-HC(8)                         TO WS-HP(8).
+
       
       *****************************************************************
       *    F I L E   F U N C T I O N S                                *
@@ -1219,7 +1279,7 @@
       *    It will read and check for errors
            SET SW-HASH-EOF-F                     TO TRUE.
            READ R-HASH.
-           
+       
            EVALUATE TRUE
              WHEN FS-HASH-OK
                CONTINUE
@@ -1249,12 +1309,28 @@
       *****************************************************************
        OPEN-OUT.
       *****************************************************************
-      *    It will open file and check for errors
-           MOVE LS-FILE-NAME                     TO CNS-FILE-OUT.
-           MOVE 'X'                              TO CNS-FILE-OUT(7:1).
+      *    It will open file and check for errors (X_NAME)
+           MOVE LS-FILE-NAME                     TO CNS-FILE-OUT(3:).
+           MOVE 'X_'                             TO CNS-FILE-OUT(1:2).
            
-           OPEN I-O R-OUT.
+           OPEN OUTPUT R-OUT.
            
+           IF FS-OUT-OK
+             CONTINUE
+           ELSE
+             DISPLAY 'Error opening file ' CNS-FILE-OUT
+             DISPLAY 'File status: ' FS-OUT
+             STOP RUN
+           END-IF.
+
+      *****************************************************************
+       OPEN-OUT-R.
+      *****************************************************************
+           MOVE LS-FILE-NAME                     TO CNS-FILE-OUT(3:).
+           MOVE 'X_'                             TO CNS-FILE-OUT(1:2).
+
+           OPEN INPUT R-OUT.
+
            IF FS-OUT-OK
              CONTINUE
            ELSE
@@ -1269,7 +1345,7 @@
       *    It will read and check for errors
            SET SW-OUT-EOF-F                     TO TRUE
            READ R-OUT.
-           
+       
            EVALUATE TRUE
              WHEN FS-OUT-OK
                CONTINUE
@@ -1288,18 +1364,28 @@
       *    It will read a block of 16 M-variables
       *
            PERFORM VARYING WS-MI FROM 1 BY 1
-           UNTIL WS-MI > 16
+           UNTIL WS-MI > 16 OR
+                 FS-OUT-EOF
              PERFORM READ-OUT
-             
+
              MOVE OUT                            TO WS-M(WS-MI)
            END-PERFORM.
+
+      *    If we reached EOF, erase WS-M
+      *
+           IF FS-OUT-EOF
+             PERFORM VARYING WS-MI FROM 1 BY 1
+             UNTIL WS-MI > 16
+               MOVE ALL '0'                        TO WS-M(WS-MI)
+             END-PERFORM
+           END-IF.
            
       *****************************************************************
        WRITE-OUT.
       *****************************************************************
       *    It will write and check for errors
            WRITE OUT.
-           
+      
            EVALUATE TRUE
              WHEN FS-OUT-OK
                CONTINUE
@@ -1502,8 +1588,8 @@
       *
            SET SW-ACC-FALSE                      TO TRUE
       
-           PERFORM VARYING WS-SUM-INDEX FROM 1 BY 1
-           UNTIL WS-SUM-INDEX > CNS-SUM-MAX
+           PERFORM VARYING WS-SUM-INDEX FROM 64 BY -1
+           UNTIL WS-SUM-INDEX = 0
              MOVE WS-SUM-KEY-1-X(WS-SUM-INDEX)   TO SW-SUM
              ADD  WS-SUM-KEY-2-X(WS-SUM-INDEX)   TO SW-SUM
       
@@ -1529,6 +1615,7 @@
                SET SW-ACC-FALSE                  TO TRUE
              END-IF
            END-PERFORM.
+
            
       *****************************************************************
        RIGHT-SPACE.
@@ -1932,7 +2019,7 @@
       *    Fill K's table
            MOVE '01000010100010100010111110011000' TO WS-KS-BIN-1(01).
            MOVE '11010111001010001010111000100010' TO WS-KS-BIN-2(01).
-           
+
            MOVE '01110001001101110100010010010001' TO WS-KS-BIN-1(02).
            MOVE '00100011111011110110010111001101' TO WS-KS-BIN-2(02).
 
