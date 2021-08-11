@@ -348,11 +348,7 @@
 
 
        DECIPHER.
-      *     We need to reverse W structure
-      *     PERFORM REVERSE-W.
-
       *     Initialize values
-      
             MOVE NR                         TO WS-CR
             ADD 1                           TO WS-CR 
 
