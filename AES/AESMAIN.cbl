@@ -309,9 +309,6 @@
                     MOVE PAD-X              TO IO-TEXT OF IOCOMM
                     MOVE LMAIN-KEY          TO IO-KEY OF IOCOMM
 
-      *             Get KEY-SCHEDULE
-      *              PERFORM KEY-SCHEDULE
-
       *             Force cipher
                     MOVE 'C'                TO IO-ACTION
                     CALL 'AESCORE' USING IOCOMM IOTAB IOPUTM
