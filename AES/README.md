@@ -79,11 +79,11 @@ Again, is up to any developer to build a custom interface that holds `AESTAB` in
 
 
 ## Mentions
- * [FIPS Paper!](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf)
- * [XTime operation (explanation)!](https://www.usenix.org/legacy/publications/library/proceedings/cardis02/full_papers/valverde/valverde_html/node12.html)
- * [MixColumns (explanation)!](https://en.wikipedia.org/wiki/Rijndael_MixColumns)
- * [AES Modes (explanation)!](https://www.highgo.ca/2019/08/08/the-difference-in-five-modes-in-the-aes-encryption-algorithm/)
- * [AES Online (used during testing)!](https://the-x.cn/en-us/cryptography/Aes.aspx)
+ * [FIPS Paper](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf)
+ * [XTime operation (explanation)](https://www.usenix.org/legacy/publications/library/proceedings/cardis02/full_papers/valverde/valverde_html/node12.html)
+ * [MixColumns (explanation)](https://en.wikipedia.org/wiki/Rijndael_MixColumns)
+ * [AES Modes (explanation)](https://www.highgo.ca/2019/08/08/the-difference-in-five-modes-in-the-aes-encryption-algorithm/)
+ * [AES Online (used during testing)](https://the-x.cn/en-us/cryptography/Aes.aspx)
 
 
 
