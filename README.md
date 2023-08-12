@@ -12,6 +12,7 @@ All this modules are free to download and use, and closed releases are NOT allow
 ## What functions cover this repository
  * SHA-1: The classical hash algorithm, fully tested.
  * SHA-512: The newest hash algorithm, tested.
+ * AES: Advanced Encription System, with all options and methods.
  * So many other modules yet to come. Do you need one? Just tell me!
 
 
