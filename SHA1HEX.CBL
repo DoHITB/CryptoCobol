@@ -343,6 +343,7 @@
          01 LS-SECTION.
              05 LS-HEX-TEXT       PIC X(512).
              05 LS-HEX-LENGTH     PIC 9(003).
+             05 LS-ERROR-CODE     PIC 9(002).
       
        PROCEDURE DIVISION USING LS-SECTION.
        MAINLINE.
@@ -360,6 +361,14 @@
            MOVE LS-HEX-TEXT       TO WS-RAW-TEXT.
            MOVE LS-HEX-LENGTH     TO WS-TEXT-LENGTH
                                      WS-TEXT-ASCII-LEN.
+
+      *    Length check
+           IF WS-TEXT-ASCII-LEN > 32
+               MOVE 99            TO LS-ERROR-CODE
+               GOBACK
+           ELSE
+               MOVE 00            TO LS-ERROR-CODE
+           END-IF.
       
       *    Transform ASCII into HEX
       *
